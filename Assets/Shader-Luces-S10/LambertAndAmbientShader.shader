@@ -1,64 +1,70 @@
-Shader "Unlit/LambertAndAmbientShader"
+Shader "shadersInUnity/beginner/Lambert"
 {
-    Properties
-    {
-        _Color("Color", Color) = (1, 1, 1, 1) // Color del material
-    }
-        SubShader
-    {
-        Tags { "RenderType" = "Opaque" }
-        LOD 100
+	Properties{
+		_Color("Color", Color) = (1.0,1.0,1.0)
+	}
 
-        Pass
-        {
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #pragma multi_compile_fog
+		SubShader{
+			Tags {"LightMode" = "ForwardBase"}
+			Pass{
 
-            #include "UnityCG.cginc"
+				CGPROGRAM
 
-            struct appdata
-            {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-            };
+				#pragma vertex vert
+				#pragma fragment frag
 
-            struct v2f
-            {
-                float3 worldNormal : TEXCOORD0;
-                float4 vertex : SV_POSITION;
-                UNITY_FOG_COORDS(1)
-            };
+				// user defined variables
+				uniform float4 _Color;
 
-            float4 _Color;
+	// unity defined variables
+	uniform float4 _LightColor0;
 
-            v2f vert(appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.worldNormal = UnityObjectToWorldNormal(v.normal);
-                UNITY_TRANSFER_FOG(o, o.vertex);
-                return o;
-            }
+	// unity 3 definitions
+	// float4x4 _Object2World;
+	// float4x4 _World2Object;
+	// float4 _WorldSpaceLightPos0;
 
-            fixed4 frag(v2f i) : SV_Target
-            {
-                float3 normal = normalize(i.worldNormal);
+	// base input structs
+	struct vertexInput {
+		float4 vertex: POSITION;
+		float3 normal: NORMAL;
+	};
 
-                float3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
-                float diff = max(0, dot(normal, lightDir));
+	struct vertexOutput {
+		float4 pos: SV_POSITION;
+		float4 col: COLOR;
+	};
 
-                float3 ambient = UNITY_LIGHTMODEL_AMBIENT.xyz;
 
-                float4 col = _Color * diff + float4(ambient, 1.0);
+	// vertex functions
+	vertexOutput vert(vertexInput v) {
+		vertexOutput o;
 
-                UNITY_APPLY_FOG(i.fogCoord, col);
+		float3 normalDirection = normalize(mul(float4(v.normal, 0.0),unity_WorldToObject).xyz);
+		float3 lightDirection;
+		float atten = 1.0;
 
-                return col;
-            }
-            ENDCG
-        }
-    }
+		lightDirection = normalize(_WorldSpaceLightPos0.xyz);
+		float3 diffuseReflection = atten * _LightColor0.xyz * _Color.rgb * max(0.0,dot(normalDirection, lightDirection));
+
+		o.col = float4(diffuseReflection, 1.0);
+		o.pos = UnityObjectToClipPos(v.vertex);
+
+		return o;
+	}
+
+	// fragment function
+	float4 frag(vertexOutput i) : COLOR
+	{
+		return i.col;
+	}
+
+
+ENDCG
 }
 
+// fallback commentd out during development
+// fallback "Diffuse"
+
+	}
+}
