@@ -29,7 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Shininess: 25
+    - _Shininess: 14.2
     - _WaveAmplitude: 0.1
     - _WaveFrequency: 2
     - _WaveIntensity: 0.1
