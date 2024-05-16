@@ -2,56 +2,64 @@ Shader "Unlit/TextureWithAmbientLightShader"
 {
     Properties
     {
-        _MainTex("Texture", 2D) = "white" {} // Textura principal
-        _AmbientColor("Ambient Color", Color) = (1, 1, 1, 1) // Color de la luz ambiental
+        _MainTex ("Texture", 2D) = "white" {} // Textura principal
+        _AmbientColor ("Ambient Color", Color) = (1, 1, 1, 1) // Color de la luz ambiental
     }
-        SubShader
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" }
+        LOD 100
+
+        Pass
         {
-            Tags { "RenderType" = "Opaque" }
-            LOD 100
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            // make fog work
+            #pragma multi_compile_fog
 
-            Pass
+            #include "UnityCG.cginc"
+
+            struct appdata
             {
-                CGPROGRAM
-                #pragma vertex vert
-                #pragma fragment frag
-                // make fog work
-                #pragma multi_compile_fog
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+                float2 uv : TEXCOORD0;
+            };
 
-                #include "UnityCG.cginc"
+            struct v2f
+            {
+                float2 uv : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+                float3 worldPos : TEXCOORD1;
+                float3 worldNormal : TEXCOORD2;
+                UNITY_FOG_COORDS(3)
+            };
 
-                struct appdata
-                {
-                    float4 vertex : POSITION;
-                    float2 uv : TEXCOORD0;
-                };
+            sampler2D _MainTex;
+            float4 _AmbientColor;
 
-                struct v2f
-                {
-                    float2 uv : TEXCOORD0;
-                    float4 vertex : SV_POSITION;
-                    UNITY_FOG_COORDS(1)
-                };
+            v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = v.uv;
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.worldNormal = UnityObjectToWorldNormal(v.normal);
+                UNITY_TRANSFER_FOG(o, o.vertex);
+                return o;
+            }
 
-                sampler2D _MainTex;
-                float4 _AmbientColor;
+            fixed4 frag (v2f i) : SV_Target
+            {
+                // Sample the texture
+                fixed4 texColor = tex2D(_MainTex, i.uv);
 
-                v2f vert(appdata v)
-                {
-                    v2f o;
-                    o.vertex = UnityObjectToClipPos(v.vertex);
-                    o.uv = v.uv;
-                    UNITY_TRANSFER_FOG(o, o.vertex);
-                    return o;
-                }
+                // Calculate ambient light component
+                fixed4 ambient = _AmbientColor;
 
-                fixed4 frag(v2f i) : SV_Target
-                {
-                    // Sample the texture
-                    fixed4 texColor = tex2D(_MainTex, i.uv);
-
-                // Apply ambient light
-                fixed4 col = texColor * _AmbientColor;
+                // Combine the texture color with the ambient light
+                fixed4 col = texColor * ambient;
 
                 // Apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
@@ -60,5 +68,5 @@ Shader "Unlit/TextureWithAmbientLightShader"
             }
             ENDCG
         }
-        }
+    }
 }

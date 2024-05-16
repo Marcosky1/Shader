@@ -1,4 +1,4 @@
-Shader "Custom/WindFlagShader"
+Shader "Unlit/WindFlagShader"
 {
     Properties
     {
@@ -12,34 +12,48 @@ Shader "Custom/WindFlagShader"
         Tags { "RenderType"="Opaque" }
         LOD 200
         
-        CGPROGRAM
-        #pragma surface surf Lambert vertex:vert
-        
-        struct Input
+        Pass
         {
-            float2 uv_MainTex;
-        };
-        
-        sampler2D _MainTex;
-        float _WaveSpeed;
-        float _WaveIntensity;
-        float3 _WindDirection;
-        
-        void vert(inout appdata_full v, out Input o)
-        {
-            float time = _Time.y * _WaveSpeed;
-            float wave = sin(dot(v.vertex.xyz, _WindDirection) * _WaveIntensity + time);
-            v.vertex.y += wave;
-            o.uv_MainTex = v.texcoord.xy;
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float2 uv_MainTex : TEXCOORD0;
+            };
+            
+            struct v2f
+            {
+                float2 uv_MainTex : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+            };
+            
+            sampler2D _MainTex;
+            float _WaveSpeed;
+            float _WaveIntensity;
+            float3 _WindDirection;
+            
+            v2f vert(appdata v)
+            {
+                v2f o;
+                float time = _Time.y * _WaveSpeed;
+                float wave = sin(dot(v.vertex.xyz, _WindDirection) * _WaveIntensity + time);
+                v.vertex.y += wave;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv_MainTex = v.uv_MainTex;
+                return o;
+            }
+            
+            fixed4 frag(v2f i) : SV_Target
+            {
+                fixed4 texColor = tex2D(_MainTex, i.uv_MainTex);
+                return texColor;
+            }
+            ENDCG
         }
-        
-        void surf(Input IN, inout SurfaceOutput o)
-        {
-            fixed4 texColor = tex2D(_MainTex, IN.uv_MainTex);
-            o.Albedo = texColor.rgb;
-            o.Alpha = texColor.a;
-        }
-        ENDCG
     }
     FallBack "Diffuse"
 }
+

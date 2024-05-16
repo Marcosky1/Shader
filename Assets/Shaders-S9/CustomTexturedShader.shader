@@ -1,4 +1,4 @@
-Shader "Custom/TexturedShader"
+Shader "Unlit/TexturedShader"
 {
     Properties
     {
@@ -10,24 +10,42 @@ Shader "Custom/TexturedShader"
         Tags { "RenderType"="Opaque" }
         LOD 200
         
-        CGPROGRAM
-        #pragma surface surf Lambert
-        
-        struct Input
+        Pass
         {
-            float2 uv_MainTex;
-        };
-        
-        sampler2D _MainTex;
-        fixed4 _Color;
-        
-        void surf (Input IN, inout SurfaceOutput o)
-        {
-            fixed4 texColor = tex2D(_MainTex, IN.uv_MainTex) * _Color;
-            o.Albedo = texColor.rgb;
-            o.Alpha = texColor.a;
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float2 uv_MainTex : TEXCOORD0;
+            };
+            
+            struct v2f
+            {
+                float2 uv_MainTex : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+            };
+            
+            sampler2D _MainTex;
+            fixed4 _Color;
+            
+            v2f vert(appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv_MainTex = v.uv_MainTex;
+                return o;
+            }
+            
+            fixed4 frag(v2f i) : SV_Target
+            {
+                fixed4 texColor = tex2D(_MainTex, i.uv_MainTex) * _Color;
+                return texColor;
+            }
+            ENDCG
         }
-        ENDCG
     }
     FallBack "Diffuse"
 }
